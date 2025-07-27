@@ -41,27 +41,41 @@ export interface PerspectiveApiResponse {
       return configLoadPromise;
     }
   
-    // Create new promise to load config
-    configLoadPromise = (async () => {
-      try {
-        const response = await fetch('./env.json');
-        const config = await response.json();
-        
-        // Try multiple possible key names for flexibility
-        const apiKey = config.perspective_api_key || 
-                      config.PERSPECTIVE_API_KEY || 
-                      config.perspectiveApiKey ||
-                      'AIzaSyAnJ55WLjMfyOCU_7pcNCjdMemauS7Ls_M'; // Fallback to provided key
-        
+      // Create new promise to load config
+  configLoadPromise = (async () => {
+    try {
+      // First try to get from Vite environment variables
+      const viteApiKey = import.meta.env.VITE_PERSPECTIVE_API_KEY;
+      if (viteApiKey && viteApiKey !== 'your_perspective_api_key_here') {
+        cachedApiKey = viteApiKey;
+        return viteApiKey;
+      }
+
+      // Fallback: try to load from env.json file
+      const response = await fetch('./env.json');
+      const config = await response.json();
+      
+      // Try multiple possible key names for flexibility
+      const apiKey = config.perspective_api_key || 
+                    config.PERSPECTIVE_API_KEY || 
+                    config.perspectiveApiKey;
+      
+      if (apiKey && apiKey !== 'your_perspective_api_key_here') {
         cachedApiKey = apiKey;
         return apiKey;
-      } catch (error) {
-        console.warn('Failed to load Perspective API configuration:', error);
-        // Use the provided API key as fallback
-        cachedApiKey = 'AIzaSyAnJ55WLjMfyOCU_7pcNCjdMemauS7Ls_M';
-        return cachedApiKey;
       }
-    })();
+
+      // No valid API key found
+      console.warn('No valid Perspective API key found. Please set VITE_PERSPECTIVE_API_KEY in your environment.');
+      cachedApiKey = null;
+      return null;
+    } catch (error) {
+      console.warn('Failed to load Perspective API configuration:', error);
+      console.warn('Please set VITE_PERSPECTIVE_API_KEY in your environment variables.');
+      cachedApiKey = null;
+      return null;
+    }
+  })();
   
     return configLoadPromise;
   }
