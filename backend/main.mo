@@ -9,6 +9,7 @@ import Debug "mo:base/Debug";
 import Iter "mo:base/Iter";
 import Blob "mo:base/Blob";
 import Time "mo:base/Time";
+import Tests "tests";
 
 actor {
     // Initialize the multi-user system state
@@ -154,6 +155,41 @@ actor {
 
     public query func httpStreamingCallback(token : Http.StreamingToken) : async Http.StreamingCallbackHttpResponse {
         FileStorage.httpStreamingCallback(storage, token);
+    };
+
+    // ** Testing functionality **
+    public func runTests() : async Text {
+        let results = await Tests.runAllTests();
+        Tests.formatTestResults(results);
+    };
+
+    // ** Canister upgrade hooks **
+    system func preupgrade() {
+        Debug.print("Starting canister upgrade...");
+    };
+
+    system func postupgrade() {
+        Debug.print("Canister upgrade completed successfully!");
+    };
+
+    // ** Health check endpoint **
+    public query func health() : async {
+        status: Text;
+        timestamp: Time.Time;
+        canister_id: Text;
+        memory_usage: Nat;
+    } {
+        {
+            status = "healthy";
+            timestamp = Time.now();
+            canister_id = "w3live_backend";
+            memory_usage = 0; // Could implement actual memory usage tracking
+        };
+    };
+
+    // ** Version information **
+    public query func version() : async Text {
+        "W3Live Backend v1.0.0 - Built for Internet Computer";
     };
 };
 
