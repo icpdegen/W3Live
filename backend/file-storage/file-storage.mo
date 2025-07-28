@@ -1,5 +1,5 @@
 import Http "http";
-import OrderedMap "mo:base/OrderedMap";
+import HashMap "mo:base/HashMap";
 import Text "mo:base/Text";
 import Blob "mo:base/Blob";
 import Array "mo:base/Array";
@@ -13,17 +13,14 @@ module {
     };
 
     public type FileStorage = {
-        var assets : OrderedMap.Map<Text, Asset>;
-        var pending : OrderedMap.Map<Text, Asset>;
+        var assets : HashMap.HashMap<Text, Asset>;
+        var pending : HashMap.HashMap<Text, Asset>;
     };
 
     public func new() : FileStorage {
-        let pathMap = OrderedMap.Make<Text>(Text.compare);
-        let assets = pathMap.empty<Asset>();
-        let pending = pathMap.empty<Asset>();
         {
-            var assets;
-            var pending;
+            var assets = HashMap.HashMap<Text, Asset>(0, Text.equal, Text.hash);
+            var pending = HashMap.HashMap<Text, Asset>(0, Text.equal, Text.hash);
         };
     };
 
@@ -34,37 +31,36 @@ module {
     };
 
     public func list(storage : FileStorage) : [FileMetadata] {
-        let pathMap = OrderedMap.Make<Text>(Text.compare);
-        let metadata = pathMap.map<Asset, FileMetadata>(
-            storage.assets,
-            func(path, asset) {
-                let size = Array.foldLeft<Blob, Nat>(asset.chunks, 0, func(sum, chunk) { sum + chunk.size() });
-                let mimeType = asset.mimeType;
-                { path; mimeType; size };
-            }
+        let entries = storage.assets.entries();
+        Iter.toArray(
+            Iter.map<(Text, Asset), FileMetadata>(
+                entries,
+                func((path, asset)) {
+                    let size = Array.foldLeft<Blob, Nat>(asset.chunks, 0, func(sum, chunk) { sum + chunk.size() });
+                    let mimeType = asset.mimeType;
+                    { path; mimeType; size };
+                }
+            )
         );
-        Iter.toArray(pathMap.vals(metadata));
     };
 
     public func upload(storage : FileStorage, path : Text, mimeType : Text, chunk : Blob, complete : Bool) {
-        let pathMap = OrderedMap.Make<Text>(Text.compare);
-        let chunks = switch (pathMap.get(storage.pending, path)) {
+        let chunks = switch (storage.pending.get(path)) {
             case null [chunk];
             case (?old) Array.append(old.chunks, [chunk]);
         };
         let combined = { mimeType; chunks };
         if (complete) {
-            ignore pathMap.remove(storage.pending, path);
-            storage.assets := pathMap.put(storage.assets, path, combined);
+            ignore storage.pending.remove(path);
+            ignore storage.assets.put(path, combined);
         } else {
-            storage.pending := pathMap.put(storage.pending, path, combined);
+            ignore storage.pending.put(path, combined);
         };
     };
 
     public func delete(storage : FileStorage, path : Text) {
-        let pathMap = OrderedMap.Make<Text>(Text.compare);
-        storage.assets := pathMap.remove(storage.assets, path).0;
-        storage.pending := pathMap.remove(storage.pending, path).0;
+        ignore storage.assets.remove(path);
+        ignore storage.pending.remove(path);
     };
 
     let skipCertificate = ("IC-Certificate", "skip");
@@ -84,8 +80,7 @@ module {
             case null request.url;
             case (?stripped) stripped;
         };
-        let pathMap = OrderedMap.Make<Text>(Text.compare);
-        switch (pathMap.get(storage.assets, path)) {
+        switch (storage.assets.get(path)) {
             case null notFound;
             case (?asset) {
                 let streamingStrategy = if (asset.chunks.size() == 1) {
@@ -112,10 +107,9 @@ module {
         };
     };
 
-    public func httpStreamingCallback(storage : FileStorage, token : Http.StreamingToken) : Http.StreamingCallbackHttpResponse {
+    public func httpStreamingCallback(storage : FileStorage, token : Http.StreamingToken) : Http.StreamingCallbackHttpResponse {  
         let path = token.resource;
-        let pathMap = OrderedMap.Make<Text>(Text.compare);
-        let asset = switch (pathMap.get(storage.assets, path)) {
+        let asset = switch (storage.assets.get(path)) {
             case null Debug.trap("Invalid resource");
             case (?asset) asset;
         };

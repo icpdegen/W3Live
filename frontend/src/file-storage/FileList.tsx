@@ -1,7 +1,8 @@
 import { useActor } from '../hooks/useActor';
-import { canisterId, FileMetadata } from '../backend';
+import { canisterId } from '../backend';
+import type { FileMetadata } from '../declarations/w3live_backend/w3live_backend.did';
 
-const network = process.env.DFX_NETWORK || (process.env.NODE_ENV === 'production' ? 'ic' : 'local');
+const network = process.env.DFX_NETWORK || 'local';
 
 async function loadConfig(): Promise<{
     backend_host: string;
@@ -53,7 +54,7 @@ export const useFileList = () => {
 
         const config = await loadConfig();
 
-        let backendCanisterId = canisterId;
+        let backendCanisterId: string = canisterId;
         if (config.backend_canister_id !== 'undefined') {
             backendCanisterId = config.backend_canister_id;
         }

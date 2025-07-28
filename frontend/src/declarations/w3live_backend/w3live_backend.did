@@ -1,0 +1,87 @@
+type UserRole = 
+ variant {
+   admin;
+   guest;
+   user;
+ };
+type UserProfile = record {name: text;};
+type Time = int;
+type StreamingToken = 
+ record {
+   index: nat;
+   resource: text;
+ };
+type StreamingStrategy = variant {
+                           Callback:
+                            record {
+                              callback: StreamingCallback;
+                              token: StreamingToken;
+                            };};
+type StreamingCallbackHttpResponse = 
+ record {
+   body: blob;
+   token: opt StreamingToken;
+ };
+type StreamingCallback = func (StreamingToken) ->
+                          (StreamingCallbackHttpResponse) query;
+type HttpResponse = 
+ record {
+   body: blob;
+   headers: vec HeaderField;
+   status_code: nat16;
+   streaming_strategy: opt StreamingStrategy;
+ };
+type HttpRequest = 
+ record {
+   body: blob;
+   headers: vec HeaderField;
+   method: text;
+   url: text;
+ };
+type HeaderField = 
+ record {
+   text;
+   text;
+ };
+type FileMetadata = 
+ record {
+   mimeType: text;
+   path: text;
+   size: nat;
+ };
+type Data = 
+ record {
+   content: text;
+   createdAt: Time;
+   id: nat;
+   metadata: text;
+   owner: principal;
+   updatedAt: Time;
+ };
+service : {
+  createData: (text, text) -> ();
+  delete: (text) -> ();
+  deleteData: (nat) -> ();
+  getAllData: () -> (vec Data) query;
+  getCurrentUserRole: () -> (UserRole) query;
+  getData: (nat) -> (opt Data) query;
+  getUserProfile: () -> (opt UserProfile) query;
+  health: () ->
+   (record {
+      canister_id: text;
+      memory_usage: nat;
+      status: text;
+      timestamp: Time;
+    }) query;
+  httpStreamingCallback: (StreamingToken) ->
+   (StreamingCallbackHttpResponse) query;
+  http_request: (HttpRequest) -> (HttpResponse) query;
+  initializeAuth: () -> ();
+  isCurrentUserAdmin: () -> (bool) query;
+  list: () -> (vec FileMetadata);
+  runTests: () -> (text);
+  saveUserProfile: (UserProfile) -> ();
+  updateData: (nat, text, text) -> ();
+  upload: (text, text, blob, bool) -> ();
+  version: () -> (text) query;
+}

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Heart, ThumbsUp, Flame, HandHeart, Laugh, User, LogIn } from 'lucide-react';
+import { Heart, ThumbsUp, Flame, Hand, Laugh, User, LogIn } from 'lucide-react';
 import { useEventLikes, useEventReactions, useToggleLike, useSetReaction, useUserProfile } from '../hooks/useQueries';
 import { useInternetIdentity } from 'ic-use-internet-identity';
 import LoginButton from './LoginButton';
@@ -13,7 +13,7 @@ const EMOJI_REACTIONS = [
   { emoji: '❤️', name: 'heart', icon: Heart, color: 'text-red-400' },
   { emoji: '👍', name: 'thumbs_up', icon: ThumbsUp, color: 'text-blue-400' },
   { emoji: '🔥', name: 'fire', icon: Flame, color: 'text-orange-400' },
-  { emoji: '👏', name: 'clap', icon: HandHeart, color: 'text-green-400' },
+  { emoji: '👏', name: 'clap', icon: Hand, color: 'text-green-400' },
   { emoji: '😂', name: 'laugh', icon: Laugh, color: 'text-yellow-400' }
 ];
 

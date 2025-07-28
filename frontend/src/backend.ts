@@ -1,6 +1,7 @@
-import { Actor, HttpAgent } from '@dfinity/agent';
+import { Actor, HttpAgent, type ActorSubclass } from '@dfinity/agent';
 import { AuthClient } from '@dfinity/auth-client';
 import { Principal } from '@dfinity/principal';
+import { createActor as createBackendActor, canisterId as backendCanisterId } from './declarations/w3live_backend';
 
 // Backend types that match your Motoko canister
 export interface UserProfile {
@@ -16,45 +17,43 @@ export interface Data {
   updatedAt: bigint;
 }
 
-// Backend interface that matches your Motoko canister methods
-export interface BackendInterface {
-  initializeAuth: () => Promise<void>;
-  getCurrentUserRole: () => Promise<any>;
-  isCurrentUserAdmin: () => Promise<boolean>;
-  getUserProfile: () => Promise<UserProfile | null>;
-  saveUserProfile: (profile: UserProfile) => Promise<void>;
-  createData: (content: string, metadata: string) => Promise<void>;
-  updateData: (id: bigint, content: string, metadata: string) => Promise<void>;
-  deleteData: (id: bigint) => Promise<void>;
-  getData: (id: bigint) => Promise<Data | null>;
-  getAllData: () => Promise<Data[]>;
-  list: () => Promise<any[]>;
-  upload: (path: string, mimeType: string, chunk: Uint8Array, complete: boolean) => Promise<void>;
-  delete: (path: string) => Promise<void>;
-  http_request: (request: any) => Promise<any>;
-  httpStreamingCallback: (token: any) => Promise<any>;
-}
+// Backend interface - use the generated one
+export type BackendInterface = any;
 
-// Canister ID - this will be set after deployment
-const CANISTER_ID = (import.meta as any).env?.VITE_CANISTER_ID_W3LIVE_BACKEND || '';
+// Canister ID - use the generated one
+export const canisterId = backendCanisterId;
 
 // Create the actor
-export async function createActor(): Promise<Actor<BackendInterface>> {
-  const authClient = await AuthClient.create();
-  const identity = authClient.getIdentity();
-  
-  const agent = new HttpAgent({
-    identity,
-    host: (import.meta as any).env?.VITE_DFX_NETWORK === 'ic' ? 'https://ic0.app' : 'http://127.0.0.1:8000',
-  });
+export async function createActor(options?: { agentOptions?: { identity?: any } }): Promise<ActorSubclass<any>> {
+  try {
+    console.log('Creating actor with options:', options);
+    
+    let identity;
+    
+    if (options?.agentOptions?.identity) {
+      // Use the provided identity (from Internet Identity)
+      identity = options.agentOptions.identity;
+      console.log('Using provided identity:', identity.getPrincipal().toString());
+    } else {
+      // Fallback to anonymous identity
+      const authClient = await AuthClient.create();
+      identity = authClient.getIdentity();
+      console.log('Using anonymous identity:', identity.getPrincipal().toString());
+    }
 
-  // For local development, we need to fetch the root key
-  if ((import.meta as any).env?.VITE_DFX_NETWORK !== 'ic') {
-    await agent.fetchRootKey();
+    console.log('Creating backend actor with canister ID:', backendCanisterId);
+    
+    const actor = createBackendActor(backendCanisterId, {
+      agentOptions: {
+        identity,
+        host: 'https://ic0.app',
+      },
+    });
+    
+    console.log('Actor created successfully:', actor);
+    return actor;
+  } catch (error) {
+    console.error('Error creating actor:', error);
+    throw error;
   }
-
-  return Actor.createActor<BackendInterface>({
-    canisterId: CANISTER_ID,
-    agent,
-  });
 } 

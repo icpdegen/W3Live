@@ -1,5 +1,14 @@
 {
+  "w3live_backend": {
+    "ic": "7m67m-xiaaa-aaaam-qd2tq-cai"
+  },
   "w3live_frontend": {
     "ic": "wzvlg-2yaaa-aaaah-qqezq-cai"
+  },
+  "w3live_frontend_new": {
+    "ic": "6bq3c-yaaaa-aaaam-qd2ua-cai"
+  },
+  "w3live_web": {
+    "ic": "6gr5w-vyaaa-aaaam-qd2uq-cai"
   }
 }

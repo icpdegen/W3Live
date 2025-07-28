@@ -1,4 +1,3 @@
-import Map "mo:base/OrderedMap";
 import Principal "mo:base/Principal";
 import Debug "mo:base/Debug";
 import Nat "mo:base/Nat";
@@ -7,13 +6,13 @@ module {
     public type AdminOnlySystemState = {
         var adminPrincipal : ?Principal;
     };
-    
+
     public func initState() : AdminOnlySystemState {
         {
             var adminPrincipal = null;
         }
     };
-    
+
     // Initialize auth with the first caller becoming admin
     public func initializeAuth(state: AdminOnlySystemState, caller: Principal) {
         if (Principal.isAnonymous(caller)) {

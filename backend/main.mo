@@ -1,7 +1,8 @@
 import MultiUserSystem "auth-multi-user/management";
 import FileStorage "file-storage/file-storage";
 import Http "file-storage/http";
-import Map "mo:base/OrderedMap";
+import HashMap "mo:base/HashMap";
+import Hash "mo:base/Hash";
 import Nat "mo:base/Nat";
 import Principal "mo:base/Principal";
 import Text "mo:base/Text";
@@ -25,7 +26,7 @@ actor {
     };
 
     public query ({ caller }) func isCurrentUserAdmin() : async Bool {
-        MultiUserSystem.isAdmin(multiUserState, caller);
+        return MultiUserSystem.isAdmin(multiUserState, caller);
     };
 
     // ** Application-specific user profile management **
@@ -34,15 +35,19 @@ actor {
         // Other user's metadata if needed
     };
 
-    transient let principalMap = Map.Make<Principal>(Principal.compare);
-    var userProfiles = principalMap.empty<UserProfile>();
+    // Equality function for Principal
+    func principalEq(a : Principal, b : Principal) : Bool {
+        Principal.toText(a) == Principal.toText(b)
+    };
+
+    var userProfiles = HashMap.HashMap<Principal, UserProfile>(0, principalEq, Principal.hash);
 
     public query ({ caller }) func getUserProfile() : async ?UserProfile {
-        principalMap.get(userProfiles, caller);
+        userProfiles.get(caller);
     };
 
     public shared ({ caller }) func saveUserProfile(profile : UserProfile) : async () {
-        userProfiles := principalMap.put(userProfiles, caller, profile);
+        ignore userProfiles.put(caller, profile);
     };
 
     // ** Start of application specific logic, TODO: adapt to your needs **
@@ -57,14 +62,23 @@ actor {
         updatedAt : Time.Time;
     };
 
-    transient let dataMap = Map.Make<Nat>(Nat.compare);
-    var data : Map.Map<Nat, Data> = dataMap.empty<Data>();
+    // Equality function for Nat
+    func natEq(a : Nat, b : Nat) : Bool {
+        a == b
+    };
+
+    // Hash function for Nat
+    func natHash(n : Nat) : Hash.Hash {
+        Hash.hash(n)
+    };
+
+    var data = HashMap.HashMap<Nat, Data>(0, natEq, natHash);
 
     public shared ({ caller }) func createData(content : Text, metadata : Text) : async () {
         if (not (MultiUserSystem.hasPermission(multiUserState, caller, #user, false))) {
             Debug.trap("Unauthorized: Only users and admins can create data");
         };
-        let id = dataMap.size(data);
+        let id = data.size();
         let newData = {
             id;
             content;
@@ -73,14 +87,14 @@ actor {
             createdAt = Time.now();
             updatedAt = Time.now();
         };
-        data := dataMap.put(data, id, newData);
+        ignore data.put(id, newData);
     };
 
     public shared ({ caller }) func updateData(id : Nat, content : Text, metadata : Text) : async () {
         if (not (MultiUserSystem.hasPermission(multiUserState, caller, #user, false))) {
             Debug.trap("Unauthorized: Only users and admins can update data");
         };
-        let existingData = dataMap.get(data, id);
+        let existingData = data.get(id);
         switch (existingData) {
             case null {
                 Debug.trap("Data not found");
@@ -97,7 +111,7 @@ actor {
                     createdAt = existing.createdAt;
                     updatedAt = Time.now();
                 };
-                data := dataMap.put(data, id, updatedData);
+                ignore data.put(id, updatedData);
             };
         };
     };
@@ -106,7 +120,7 @@ actor {
         if (not (MultiUserSystem.hasPermission(multiUserState, caller, #user, false))) {
             Debug.trap("Unauthorized: Only users and admins can delete data");
         };
-        let existingData = dataMap.get(data, id);
+        let existingData = data.get(id);
         switch (existingData) {
             case null {
                 Debug.trap("Data not found");
@@ -115,7 +129,7 @@ actor {
                 if (existing.owner != caller) {
                     Debug.trap("Unauthorized: Only the owner can delete this data");
                 };
-                data := dataMap.delete(data, id);
+                ignore data.remove(id);
             };
         };
     };
@@ -124,14 +138,14 @@ actor {
         if (not (MultiUserSystem.hasPermission(multiUserState, caller, #user, false))) {
             Debug.trap("Unauthorized: Only users and admins can view data");
         };
-        dataMap.get(data, id);
+        data.get(id);
     };
 
     public query ({ caller }) func getAllData() : async [Data] {
         if (not (MultiUserSystem.hasPermission(multiUserState, caller, #user, false))) {
             Debug.trap("Unauthorized: Only users and admins can view data");
         };
-        Iter.toArray(dataMap.vals(data));
+        Iter.toArray(data.vals());
     };
 
     // ** File storage **
@@ -192,8 +206,3 @@ actor {
         "W3Live Backend v1.0.0 - Built for Internet Computer";
     };
 };
-
-
-
-
-

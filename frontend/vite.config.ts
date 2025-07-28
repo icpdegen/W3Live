@@ -5,24 +5,18 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   build: {
-    outDir: 'dist',
-    assetsDir: 'assets',
     sourcemap: false,
     rollupOptions: {
       output: {
         manualChunks: {
           vendor: ['react', 'react-dom'],
-          dfinity: ['@dfinity/agent', '@dfinity/auth-client', '@dfinity/identity'],
           ui: ['lucide-react']
         }
       }
     }
   },
-  server: {
-    port: 3000,
-    host: true
-  },
   define: {
-    global: 'globalThis',
+    'process.env.DFX_NETWORK': JSON.stringify(process.env.DFX_NETWORK || 'local'),
+    'process.env.CANISTER_ID_W3LIVE_BACKEND': JSON.stringify(process.env.CANISTER_ID_W3LIVE_BACKEND || 'bkyz2-fmaaa-aaaaa-qaaaq-cai'),
   }
 }) 

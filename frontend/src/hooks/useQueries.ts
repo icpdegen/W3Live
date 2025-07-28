@@ -10,9 +10,24 @@ export function useUserProfile() {
   return useQuery<UserProfile | null>({
     queryKey: ['userProfile'],
     queryFn: async () => {
-      if (!actor) return null;
+      console.log('useUserProfile queryFn called');
+      if (!actor) {
+        console.log('useUserProfile: No actor available');
+        return null;
+      }
       try {
-        return await actor.getUserProfile();
+        console.log('useUserProfile: Calling actor.getUserProfile()');
+        const result = await actor.getUserProfile();
+        console.log('useUserProfile: Got result:', result);
+        
+        // Handle the optional type: [] | [UserProfile]
+        if (Array.isArray(result) && result.length > 0) {
+          console.log('useUserProfile: Returning first item from array:', result[0]);
+          return result[0];
+        } else {
+          console.log('useUserProfile: No profile found (empty array)');
+          return null;
+        }
       } catch (error) {
         console.log('Unable to fetch user profile:', error);
         return null;
@@ -28,12 +43,26 @@ export function useSaveUserProfile() {
 
   return useMutation({
     mutationFn: async (profile: UserProfile) => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.saveUserProfile(profile);
+      console.log('useSaveUserProfile mutationFn called with:', profile);
+      if (!actor) {
+        console.error('Actor not available in useSaveUserProfile');
+        throw new Error('Actor not available');
+      }
+      console.log('Calling actor.saveUserProfile with:', profile);
+      const result = await actor.saveUserProfile(profile);
+      console.log('actor.saveUserProfile result:', result);
+      return result;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('useSaveUserProfile onSuccess called with:', data);
+      // Invalidate and refetch the user profile
       queryClient.invalidateQueries({ queryKey: ['userProfile'] });
+      queryClient.refetchQueries({ queryKey: ['userProfile'] });
+      console.log('User profile queries invalidated and refetched');
     },
+    onError: (error) => {
+      console.error('useSaveUserProfile onError:', error);
+    }
   });
 }
 

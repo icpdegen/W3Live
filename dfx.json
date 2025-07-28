@@ -4,11 +4,11 @@
       "type": "motoko",
       "main": "backend/main.mo"
     },
-    "w3live_frontend": {
+    "w3live_web": {
       "type": "assets",
       "source": ["frontend/dist"],
       "build": [
-        "npm run build"
+  "./build-frontend.sh"
       ]
     }
   },
@@ -20,6 +20,10 @@
     },
     "ic": {
       "providers": ["https://ic0.app"],
+      "type": "persistent"
+    },
+    "ic_testnet": {
+      "providers": ["https://ic0.testnet.dfinity.network"],
       "type": "persistent"
     }
   },

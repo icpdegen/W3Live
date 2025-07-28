@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Plus, Calendar, Users, Video, Edit, Trash2, Eye, Globe, Lock, FileText, User, Save, X, AlertTriangle, RefreshCw, Wifi, Shield, Database, CheckCircle, XCircle, Activity } from 'lucide-react';
+import { Plus, Calendar, Users, Video, Edit, Trash2, Eye, Globe, Lock, FileText, User, Save, X, AlertTriangle, RefreshCw, Wifi, Shield, Database, CheckCircle, XCircle, Activity, Bug } from 'lucide-react';
 import { useAllEvents, useDeleteEvent, useUserProfile, useSaveUserProfile } from '../hooks/useQueries';
 import { useFileList } from '../file-storage/FileList';
 import { Event } from '../types/events';
 import EventCreator from './EventCreator';
 import EventEditor from './EventEditor';
 import LikesAndReactions from './LikesAndReactions';
+import DebugPanel from './DebugPanel';
 
 export default function OrganizerDashboard() {
   const [showEventCreator, setShowEventCreator] = useState(false);
@@ -14,6 +15,7 @@ export default function OrganizerDashboard() {
   const [usernameValue, setUsernameValue] = useState('');
   const [validationMessage, setValidationMessage] = useState('');
   const [showDataIntegrityPanel, setShowDataIntegrityPanel] = useState(false);
+  const [showDebugPanel, setShowDebugPanel] = useState(false);
   
   const { data: events = [], isLoading, error, refetch, isRefetching } = useAllEvents();
   const { data: userProfile } = useUserProfile();
@@ -58,6 +60,8 @@ export default function OrganizerDashboard() {
   const handleSaveUsername = async () => {
     const trimmedName = usernameValue.trim();
     
+    console.log('handleSaveUsername called with:', trimmedName);
+    
     if (!trimmedName) {
       setValidationMessage('Username cannot be empty');
       return;
@@ -69,10 +73,14 @@ export default function OrganizerDashboard() {
       return;
     }
 
+    console.log('About to call saveProfile.mutateAsync with:', { name: trimmedName });
+    
     try {
-      await saveProfile.mutateAsync({ name: trimmedName });
+      const result = await saveProfile.mutateAsync({ name: trimmedName });
+      console.log('saveProfile.mutateAsync result:', result);
       setEditingUsername(false);
       setValidationMessage('');
+      console.log('Username saved successfully, UI updated');
     } catch (error) {
       console.error('Failed to save username:', error);
       setValidationMessage('Failed to save username. Please try again.');
@@ -153,6 +161,15 @@ export default function OrganizerDashboard() {
           <p className="text-purple-200">Manage your livestreaming events with bulletproof data persistence</p>
         </div>
         <div className="flex items-center space-x-3">
+          {/* Debug Panel Toggle */}
+          <button
+            onClick={() => setShowDebugPanel(!showDebugPanel)}
+            className="flex items-center space-x-2 text-sm text-purple-300 hover:text-white transition-colors"
+          >
+            <Bug className="w-4 h-4" />
+            <span>Debug</span>
+          </button>
+          
           {/* Bulletproof Data Integrity Panel Toggle */}
           <button
             onClick={() => setShowDataIntegrityPanel(!showDataIntegrityPanel)}
@@ -184,6 +201,13 @@ export default function OrganizerDashboard() {
           </button>
         </div>
       </div>
+
+      {/* Debug Panel */}
+      {showDebugPanel && (
+        <div className="mb-8">
+          <DebugPanel />
+        </div>
+      )}
 
       {/* Bulletproof Data Integrity Panel */}
       {showDataIntegrityPanel && (
